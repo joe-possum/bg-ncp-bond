@@ -33,7 +33,7 @@ int main(int argc, char *const*argv) {
     exit(1);
   }
   char buf1[256], buf2[256];
-  sprintf(buf1,"exe/bg-ncp-bond -F 1 -P %s -m -s -d -f /tmp/pk -b /tmp/mac-address",argv[optind]);
+  sprintf(buf1,"bg-ncp-bond-helper -F 1 -P %s -m -s -d -f /tmp/pk -b /tmp/mac-address",argv[optind]);
   unlink("/tmp/mac-address");
   pid_t pid1 = fork();
   if(pid1) system(buf1);
@@ -51,7 +51,7 @@ int main(int argc, char *const*argv) {
       sprintf(&addr_buf[3*i],"%02x:",addr[5-i]);
     }
     addr_buf[17] = 0;
-    sprintf(buf2,"exe/bg-ncp-bond -F 1 -P %s -m -s -k -f /tmp/pk -a %s",argv[optind+1],addr_buf);
+    sprintf(buf2,"bg-ncp-bond-helper -F 1 -P %s -m -s -k -f /tmp/pk -a %s",argv[optind+1],addr_buf);
     pid_t pid2 = fork();
     if(pid2) system(buf2);
     else {
