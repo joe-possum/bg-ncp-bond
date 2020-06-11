@@ -9,16 +9,22 @@
 #include <assert.h>
 
 struct config {
-  uint8_t mitm;
-} config = { .mitm = 0, };
+  uint8_t mitm, debug, privacy;
+} config = { .mitm = 0, .debug = 0, .privacy = 0, };
 
 int main(int argc, char *const*argv) {
   uint8_t done = 0;
   while(!done) {
-    int rc = getopt(argc,argv,"m");
+    int rc = getopt(argc,argv,"mdp");
     switch(rc) {
     case 'm':
       config.mitm = 1;
+      break;
+    case 'd':
+      config.debug = 1;
+      break;
+    case 'p':
+      config.privacy = 1;
       break;
     case -1:
       done = 1;
@@ -29,11 +35,12 @@ int main(int argc, char *const*argv) {
     }
   }
   if(optind != (argc - 2)) {
-    fprintf(stderr,"Usage: bg-ncp-bond [ -m ] <comport-A> <comport-B>\n");
+    fprintf(stderr,"Usage: bg-ncp-bond [ -m ] [ -d ][ -p ] <comport-A> <comport-B>\n");
     exit(1);
   }
   char buf1[256], buf2[256];
-  sprintf(buf1,"bg-ncp-bond-helper -F 1 -P %s -m -s -d -f /tmp/pk -b /tmp/mac-address",argv[optind]);
+  sprintf(buf1,"bg-ncp-bond-helper -F 1 -P %s -m -s -d -f /tmp/pk -b /tmp/mac-address%s",
+	  argv[optind], (config.debug)?" -g":"");
   unlink("/tmp/mac-address");
   pid_t pid1 = fork();
   if(pid1) system(buf1);
@@ -51,7 +58,9 @@ int main(int argc, char *const*argv) {
       sprintf(&addr_buf[3*i],"%02x:",addr[5-i]);
     }
     addr_buf[17] = 0;
-    sprintf(buf2,"bg-ncp-bond-helper -F 1 -P %s -m -s -k -f /tmp/pk -a %s",argv[optind+1],addr_buf);
+    sprintf(buf2,"bg-ncp-bond-helper -F 1 -P %s -m -s -k -f /tmp/pk -a %s%s%s",argv[optind+1],addr_buf,
+	    (config.debug)?" -g":"",
+	    (config.privacy)?" -p":"");
     pid_t pid2 = fork();
     if(pid2) system(buf2);
     else {

@@ -25,7 +25,7 @@ static struct {
   uint32 advertising_interval;
   uint16 connection_interval, mtu; 
   bd_addr remote;
-  uint8 advertise, connection, io_cap, sm_conf;
+  uint8 advertise, connection, io_cap, sm_conf, privacy, debug;
 } config = { .remote = { .addr = {0,0,0,0,0,0}},
 	     .connection = 0xff,
 	     .advertise = 1,
@@ -37,10 +37,12 @@ static struct {
 	     .mtu = 23,
 	     .io_cap = sm_io_capability_noinputnooutput,
 	     .sm_conf = 2,
+	     .debug = 0,
+	     .privacy = 0,
 };
   
 const char *getAppOptions(void) {
-  return "a<remote-address>b<address-filename>i<interval-ms>mskdyf<passkey-filename>";
+  return "a<remote-address>b<address-filename>i<interval-ms>mskdyf<passkey-filename>pg";
 }
 
 void save_address(void) {
@@ -133,7 +135,13 @@ void appOption(int option, const char *arg) {
     }
     fprintf(stderr,"Error: -k with io_cap = %d\n",config.io_cap);
     exit(1);
-    break;    
+    break;
+  case 'g':
+    config.debug = 1;
+    break;
+  case 'p':
+    config.privacy = 1;
+    break;
   default:
     fprintf(stderr,"Unhandled option '-%c'\n",option);
     exit(1);
@@ -184,11 +192,13 @@ void appHandleEvents(struct gecko_cmd_packet *evt)
     appBooted = true;
     if(config.address_filename) save_address();
     gecko_cmd_sm_configure(config.sm_conf,config.io_cap);
+    if(config.debug) gecko_cmd_sm_set_debug_mode(1);
     if(config.advertise) {
       uint8 discoverable_mode = le_gap_general_discoverable;
       gecko_cmd_le_gap_set_advertise_timing(0,config.advertising_interval,config.advertising_interval,0,0);
       gecko_cmd_le_gap_start_advertising(0,discoverable_mode,le_gap_connectable_scannable);
     } else {
+      if(config.privacy) gecko_cmd_le_gap_set_privacy_mode(1,1);
       gecko_cmd_le_gap_connect(config.remote,le_gap_address_type_public,le_gap_phy_1m);
     }
     break;
